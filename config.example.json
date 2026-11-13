@@ -1,7 +1,7 @@
 {
-  "host": "",
-  "user": "",
-  "password": "",
+  "host": "192.0.2.10",
+  "user": "example",
+  "password": "example-password",
   "lab": "labs/opengauss-e5.json",
   "shot_dir": "shots",
   "speed": 1.5,
