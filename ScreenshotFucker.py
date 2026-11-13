@@ -36,9 +36,12 @@ def ensure_config(path):
     if os.path.isfile(path):
         return load_config(path), False
     if os.path.isfile(EXAMPLE_CONFIG):
-        shutil.copyfile(EXAMPLE_CONFIG, path)
+        config = load_config(EXAMPLE_CONFIG)
+        for key in ("host", "user", "password"):
+            config[key] = ""
+        save_config(path, config)
         eprint("已根据 config.example.json 生成 config.json")
-        return load_config(path), True
+        return config, True
     return {}, False
 
 
