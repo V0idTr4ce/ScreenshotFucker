@@ -1,0 +1,541 @@
+{
+  "schema_version": 1,
+  "name": "openGauss 实验5：索引、视图、序列",
+  "description": "按实验报告每个灰框自动敲命令。第 1–20 框在 DB_em / Lab2_scm 上做索引、视图、序列；第 21–34 框建成绩库 sd_db / 模式 yzx。",
+  "vars": {
+    "port": "26000",
+    "admin_db": "postgres",
+    "role": "yzx",
+    "role_password": "Lab5@Db26000",
+    "schema": "Lab2_scm",
+    "db_em": "DB_em",
+    "db_sc": "sc_db",
+    "schema_sc": "yzx",
+    "db_sd": "sd_db",
+    "schema_sd": "yzx"
+  },
+  "settings": {
+    "window_cols": 120,
+    "window_rows": 52,
+    "window_width": 1280,
+    "window_height": 980,
+    "buffer_rows": 800,
+    "speed": 1.5,
+    "clear_between": true,
+    "capture_from_top": true
+  },
+  "session": {
+    "open": [
+      {
+        "text": "su - omm",
+        "wait": "shell",
+        "timeout": 20,
+        "skip_if": "already_omm"
+      },
+      {
+        "text": "gs_om -t start",
+        "wait": "shell",
+        "timeout": 90
+      },
+      {
+        "text": "gsql -d ${admin_db} -p ${port} -r",
+        "wait": "gsql",
+        "timeout": 20
+      }
+    ],
+    "prepare_at": [
+      {
+        "if": {
+          "min": 2,
+          "max": 20
+        },
+        "cmds": [
+          {
+            "text": "\\c ${db_em}",
+            "wait": "gsql"
+          },
+          {
+            "text": "ALTER USER ${role} IDENTIFIED BY '${role_password}';",
+            "wait": "gsql"
+          },
+          {
+            "text": "SET ROLE ${role} PASSWORD '${role_password}';",
+            "wait": "gsql"
+          },
+          {
+            "text": "SET search_path TO ${schema}, public;",
+            "wait": "gsql"
+          }
+        ]
+      },
+      {
+        "if": {
+          "min": 22
+        },
+        "cmds": [
+          {
+            "text": "\\c ${db_sd}",
+            "wait": "gsql"
+          },
+          {
+            "text": "SET search_path TO ${schema_sd}, public;",
+            "wait": "gsql"
+          }
+        ]
+      }
+    ],
+    "from": {
+      "connect_only_below": 21,
+      "replay_from": 21
+    }
+  },
+  "boxes": [
+    {
+      "n": 1,
+      "title": "以 yzx 连接 DB_em，搜索路径设为 Lab2_scm",
+      "cmds": [
+        {
+          "text": "su - omm",
+          "wait": "shell",
+          "timeout": 20,
+          "skip_if": "already_omm",
+          "kind": "shell"
+        },
+        {
+          "text": "gs_om -t start",
+          "wait": "shell",
+          "timeout": 90,
+          "kind": "shell"
+        },
+        {
+          "text": "gsql -d ${admin_db} -p ${port} -r",
+          "wait": "gsql",
+          "timeout": 20,
+          "kind": "shell"
+        },
+        {
+          "text": "\\c ${db_em}",
+          "wait": "gsql"
+        },
+        {
+          "text": "ALTER USER ${role} IDENTIFIED BY '${role_password}';",
+          "wait": "gsql"
+        },
+        {
+          "text": "SET ROLE ${role} PASSWORD '${role_password}';",
+          "wait": "gsql"
+        },
+        {
+          "text": "SET search_path TO ${schema}, public;",
+          "wait": "gsql"
+        },
+        {
+          "text": "SELECT current_user, current_database();",
+          "wait": "gsql"
+        },
+        {
+          "text": "\\d people",
+          "wait": "gsql"
+        }
+      ]
+    },
+    {
+      "n": 2,
+      "title": "给 people.peoplephone 建唯一索引",
+      "script": [
+        "CREATE UNIQUE INDEX people_phone_uk ON people (peoplephone);"
+      ]
+    },
+    {
+      "n": 3,
+      "title": "查看唯一索引 people_phone_uk",
+      "script": [
+        "\\d people_phone_uk"
+      ]
+    },
+    {
+      "n": 4,
+      "title": "按部门编号和职级编号建组合索引",
+      "script": [
+        "CREATE INDEX people_dept_job_idx ON people (departmentid, rankid);"
+      ]
+    },
+    {
+      "n": 5,
+      "title": "月薪低于 7000 的部分索引",
+      "script": [
+        "CREATE INDEX people_salmin_idx ON people (peoplesalary)",
+        "WHERE peoplesalary < 7000;"
+      ]
+    },
+    {
+      "n": 6,
+      "title": "把 people_salmin_idx 重命名为 people_sal",
+      "script": [
+        "ALTER INDEX people_salmin_idx RENAME TO people_sal;",
+        "\\d people_sal"
+      ]
+    },
+    {
+      "n": 7,
+      "title": "把 people_sal 设为不可用",
+      "script": [
+        "ALTER INDEX people_sal UNUSABLE;"
+      ]
+    },
+    {
+      "n": 8,
+      "title": "重建 people_sal",
+      "script": [
+        "ALTER INDEX people_sal REBUILD;",
+        "\\d people_sal"
+      ],
+      "timeout": 60
+    },
+    {
+      "n": 9,
+      "title": "普通视图 vw_foundinfo",
+      "script": [
+        "CREATE VIEW vw_foundinfo AS",
+        "SELECT p.peoplename AS 姓名, p.peoplesex AS 性别,",
+        "       p.peoplesalary AS 薪资, d.departmentname AS 部门名称,",
+        "       rk.rankname AS 职位名称",
+        "FROM people p",
+        "JOIN department d ON p.departmentid = d.departmentid",
+        "JOIN rank rk ON p.rankid = rk.rankid;",
+        "SELECT * FROM vw_foundinfo;"
+      ]
+    },
+    {
+      "n": 10,
+      "title": "物化视图 vw1_fnd_info（默认表空间）",
+      "script": [
+        "CREATE MATERIALIZED VIEW vw1_fnd_info AS",
+        "SELECT p.peoplename AS 姓名, p.peoplesex AS 性别,",
+        "       p.peoplesalary AS 薪资, d.departmentname AS 部门名称,",
+        "       rk.rankname AS 职位名称",
+        "FROM people p",
+        "JOIN department d ON p.departmentid = d.departmentid",
+        "JOIN rank rk ON p.rankid = rk.rankid;",
+        "SELECT * FROM vw1_fnd_info;"
+      ],
+      "timeout": 60
+    },
+    {
+      "n": 11,
+      "title": "视图 view1：高薪或月薪不低于 8000 的女员工",
+      "script": [
+        "CREATE VIEW view1 AS",
+        "SELECT d.departmentname AS 部门名称, p.peoplename AS 姓名,",
+        "       p.peoplesex AS 性别, rk.rankname AS 职级名称,",
+        "       p.peoplesalary AS 薪资",
+        "FROM people p",
+        "JOIN department d ON p.departmentid = d.departmentid",
+        "JOIN rank rk ON p.rankid = rk.rankid",
+        "WHERE p.peoplesalary >= 15000",
+        "   OR (p.peoplesex = '女' AND p.peoplesalary >= 8000);",
+        "\\d+ view1",
+        "SELECT * FROM view1;"
+      ]
+    },
+    {
+      "n": 12,
+      "title": "视图 vw_dept_top8：每个部门月薪前 8 人",
+      "script": [
+        "CREATE VIEW vw_dept_top8 AS",
+        "SELECT t.行号, t.部门名称, t.姓名, t.性别, t.薪资, t.住址",
+        "FROM (",
+        "    SELECT ROW_NUMBER() OVER (",
+        "               PARTITION BY p.departmentid",
+        "               ORDER BY p.peoplesalary DESC) AS 行号,",
+        "           d.departmentname AS 部门名称,",
+        "           p.peoplename AS 姓名, p.peoplesex AS 性别,",
+        "           p.peoplesalary AS 薪资, p.peopleaddress AS 住址",
+        "    FROM people p",
+        "    JOIN department d ON p.departmentid = d.departmentid",
+        ") t",
+        "WHERE t.行号 <= 8;",
+        "SELECT * FROM vw_dept_top8;"
+      ]
+    },
+    {
+      "n": 13,
+      "title": "视图 vw_sal10000：月薪不低于 10000",
+      "script": [
+        "CREATE VIEW vw_sal10000 AS",
+        "SELECT d.departmentname AS 部门名称, p.peoplename AS 姓名,",
+        "       p.peoplesex AS 性别, p.peoplesalary AS 薪资",
+        "FROM people p",
+        "JOIN department d ON p.departmentid = d.departmentid",
+        "WHERE p.peoplesalary >= 10000;",
+        "SELECT * FROM vw_sal10000;"
+      ]
+    },
+    {
+      "n": 14,
+      "title": "视图 vw_female10000：月薪不低于 10000 的女员工",
+      "script": [
+        "CREATE VIEW vw_female10000 AS",
+        "SELECT d.departmentname AS 部门名称, p.peoplename AS 姓名,",
+        "       p.peoplesex AS 性别, p.peoplesalary AS 薪资",
+        "FROM people p",
+        "JOIN department d ON p.departmentid = d.departmentid",
+        "WHERE p.peoplesex = '女' AND p.peoplesalary >= 10000;",
+        "SELECT * FROM vw_female10000;"
+      ]
+    },
+    {
+      "n": 15,
+      "title": "创建序列 seq_test 并授权",
+      "script": [
+        "CREATE SEQUENCE seq_test START WITH 1;",
+        "GRANT SELECT ON SEQUENCE seq_test TO ${role};",
+        "GRANT UPDATE ON SEQUENCE seq_test TO ${role};"
+      ]
+    },
+    {
+      "n": 16,
+      "title": "查询 seq_test 的 last_value",
+      "script": [
+        "SELECT last_value, is_called FROM seq_test;"
+      ]
+    },
+    {
+      "n": 17,
+      "title": "创建并删除序列 seq_drop",
+      "script": [
+        "CREATE SEQUENCE seq_drop START WITH 1;",
+        "DROP SEQUENCE seq_drop;"
+      ]
+    },
+    {
+      "n": 18,
+      "title": "serial 字段建表 T1 并查看 lastval",
+      "script": [
+        "CREATE TABLE T1 (",
+        "    ID serial,",
+        "    Name text,",
+        "    Price int",
+        ");",
+        "INSERT INTO T1 (Name, Price) VALUES ('苹果', 8);",
+        "INSERT INTO T1 (Name, Price) VALUES ('李子', 7);",
+        "INSERT INTO T1 (Name, Price) VALUES ('香蕉', 6);",
+        "INSERT INTO T1 (Name, Price) VALUES ('红枣', 20);",
+        "SELECT * FROM T1;",
+        "SELECT lastval();"
+      ]
+    },
+    {
+      "n": 19,
+      "title": "序列 seq_animal 作为 animal.id 的默认值",
+      "script": [
+        "CREATE SEQUENCE seq_animal START WITH 1;",
+        "CREATE TABLE animal (",
+        "    id int DEFAULT nextval('seq_animal'),",
+        "    name varchar(20),",
+        "    age int",
+        ");",
+        "INSERT INTO animal (name, age) VALUES ('猫', 2);",
+        "SELECT * FROM animal;"
+      ]
+    },
+    {
+      "n": 20,
+      "title": "序列 seq_deptid 接到 school_department.depart_id",
+      "script": [
+        "\\c ${db_sc}",
+        "SET search_path TO ${schema_sc}, public;",
+        "CREATE SEQUENCE seq_deptid START WITH 1;",
+        "ALTER TABLE school_department",
+        "    ALTER COLUMN depart_id SET DEFAULT nextval('seq_deptid');",
+        "\\d school_department"
+      ]
+    },
+    {
+      "n": 21,
+      "title": "创建成绩库 sd_db",
+      "cmds": [
+        {
+          "text": "\\c ${admin_db}"
+        },
+        {
+          "text": "CREATE DATABASE ${db_sd};",
+          "timeout": 90
+        },
+        {
+          "text": "\\c ${db_sd}",
+          "timeout": 30
+        }
+      ]
+    },
+    {
+      "n": 22,
+      "title": "创建模式 yzx",
+      "script": [
+        "CREATE SCHEMA ${schema_sd};",
+        "SET search_path TO ${schema_sd}, public;"
+      ]
+    },
+    {
+      "n": 23,
+      "title": "创建学生表 Student",
+      "script": [
+        "CREATE TABLE Student (",
+        "    student_id VARCHAR(20) PRIMARY KEY,",
+        "    student_name VARCHAR(50) NOT NULL,",
+        "    class_name VARCHAR(50) NOT NULL",
+        ") WITH (ORIENTATION = ROW);"
+      ]
+    },
+    {
+      "n": 24,
+      "title": "创建课程表 Course",
+      "script": [
+        "CREATE TABLE Course (",
+        "    course_id VARCHAR(20) PRIMARY KEY,",
+        "    course_name VARCHAR(100) NOT NULL,",
+        "    course_description TEXT",
+        ") WITH (ORIENTATION = ROW);"
+      ]
+    },
+    {
+      "n": 25,
+      "title": "创建成绩表 Score",
+      "script": [
+        "CREATE TABLE Score (",
+        "    student_id VARCHAR(20),",
+        "    course_id VARCHAR(20),",
+        "    score DECIMAL(5,2) CHECK (score >= 0 AND score <= 100),",
+        "    PRIMARY KEY (student_id, course_id),",
+        "    CONSTRAINT fk_student FOREIGN KEY (student_id)",
+        "        REFERENCES Student(student_id),",
+        "    CONSTRAINT fk_course FOREIGN KEY (course_id)",
+        "        REFERENCES Course(course_id)",
+        ") WITH (ORIENTATION = ROW);"
+      ]
+    },
+    {
+      "n": 26,
+      "title": "插入学生",
+      "script": [
+        "INSERT INTO Student VALUES ('2023001', '张喜梅', '计算机1班');",
+        "INSERT INTO Student VALUES ('2023002', '李小明', '计算机1班');",
+        "INSERT INTO Student VALUES ('2023003', '王兴军', '计算机1班');",
+        "INSERT INTO Student VALUES ('2023004', '赵一成', '计算机2班');",
+        "INSERT INTO Student VALUES ('2023005', '钱学良', '计算机2班');",
+        "INSERT INTO Student VALUES ('2023006', '袁子轩', '计算机2班');",
+        "INSERT INTO Student VALUES ('2023101', '周保真', '数学1班');",
+        "INSERT INTO Student VALUES ('2023102', '吴四喜', '数学1班');",
+        "INSERT INTO Student VALUES ('2023103', '郑双双', '数学2班');",
+        "INSERT INTO Student VALUES ('2023104', '孙嘉成', '数学2班');",
+        "INSERT INTO Student VALUES ('2023105', '刘建明', '数学2班');"
+      ]
+    },
+    {
+      "n": 27,
+      "title": "插入课程",
+      "script": [
+        "INSERT INTO Course VALUES ('CS101', '数据库原理', '关系数据库基础与SQL语言');",
+        "INSERT INTO Course VALUES ('CS102', '数据结构', '线性表、树、图等数据结构');",
+        "INSERT INTO Course VALUES ('CS103', '操作系统', '进程管理、内存管理、文件系统');",
+        "INSERT INTO Course VALUES ('CS201', '计算机网络', 'TCP/IP协议、网络编程');",
+        "INSERT INTO Course VALUES ('CS202', '软件工程', '软件开发流程与方法论');",
+        "INSERT INTO Course VALUES ('MA101', '高等数学', '微积分基础');",
+        "INSERT INTO Course VALUES ('MA102', '线性代数', '矩阵与线性方程组');",
+        "INSERT INTO Course VALUES ('MA201', '概率统计', '概率论与数理统计');",
+        "INSERT INTO Course VALUES ('MA202', '离散数学', '集合论、图论、数理逻辑');",
+        "INSERT INTO Course VALUES ('GE101', '大学英语', '通用英语课程');"
+      ]
+    },
+    {
+      "n": 28,
+      "title": "插入成绩",
+      "script": [
+        "INSERT INTO Score VALUES ('2023001', 'CS101', 85.5);",
+        "INSERT INTO Score VALUES ('2023001', 'CS102', 90.0);",
+        "INSERT INTO Score VALUES ('2023002', 'CS101', 78.0);",
+        "INSERT INTO Score VALUES ('2023002', 'CS103', 92.5);",
+        "INSERT INTO Score VALUES ('2023003', 'CS101', 88.0);",
+        "INSERT INTO Score VALUES ('2023003', 'CS202', 76.5);",
+        "INSERT INTO Score VALUES ('2023004', 'CS101', 95.0);",
+        "INSERT INTO Score VALUES ('2023006', 'CS101', 98.0);",
+        "INSERT INTO Score VALUES ('2023004', 'CS201', 89.5);",
+        "INSERT INTO Score VALUES ('2023005', 'CS101', 82.0);",
+        "INSERT INTO Score VALUES ('2023005', 'CS202', 91.0);",
+        "INSERT INTO Score VALUES ('2023006', 'CS202', 99.0);",
+        "INSERT INTO Score VALUES ('2023101', 'MA101', 87.0);",
+        "INSERT INTO Score VALUES ('2023101', 'CS101', 93.5);",
+        "INSERT INTO Score VALUES ('2023102', 'MA101', 76.0);",
+        "INSERT INTO Score VALUES ('2023103', 'MA102', 89.0);",
+        "INSERT INTO Score VALUES ('2023104', 'MA201', 94.5);",
+        "INSERT INTO Score VALUES ('2023105', 'MA202', 81.0);",
+        "INSERT INTO Score VALUES ('2023105', 'GE101', 88.5);"
+      ]
+    },
+    {
+      "n": 29,
+      "title": "课程成绩统计视图 CourseScoreStats",
+      "script": [
+        "CREATE VIEW CourseScoreStats AS",
+        "SELECT c.course_id, c.course_name,",
+        "       COUNT(s.student_id) AS student_count,",
+        "       MAX(s.score) AS max_score,",
+        "       MIN(s.score) AS min_score,",
+        "       ROUND(AVG(s.score), 2) AS avg_score,",
+        "       ROUND(STDDEV_SAMP(s.score), 2) AS score_stddev,",
+        "       COUNT(CASE WHEN s.score >= 90 THEN 1 END) AS excellent_count,",
+        "       COUNT(CASE WHEN s.score < 60 THEN 1 END) AS fail_count",
+        "FROM Course c",
+        "LEFT JOIN Score s ON c.course_id = s.course_id",
+        "GROUP BY c.course_id, c.course_name;"
+      ]
+    },
+    {
+      "n": 30,
+      "title": "班级课程成绩统计视图 ClassCourseScoreStats",
+      "script": [
+        "CREATE VIEW ClassCourseScoreStats AS",
+        "SELECT st.class_name, c.course_id, c.course_name,",
+        "       COUNT(s.score) AS student_count,",
+        "       ROUND(AVG(s.score), 2) AS avg_score,",
+        "       MEDIAN(s.score::double precision) AS median_score,",
+        "       ROUND(VARIANCE(s.score), 2) AS score_variance,",
+        "       LISTAGG(st.student_name || ':' || s.score::text, ', ')",
+        "           WITHIN GROUP (ORDER BY s.score) AS score_detail",
+        "FROM Student st",
+        "JOIN Score s ON st.student_id = s.student_id",
+        "JOIN Course c ON s.course_id = c.course_id",
+        "GROUP BY st.class_name, c.course_id, c.course_name",
+        "ORDER BY st.class_name, c.course_id;"
+      ]
+    },
+    {
+      "n": 31,
+      "title": "查询全部课程成绩统计",
+      "script": [
+        "SELECT * FROM CourseScoreStats ORDER BY course_id;"
+      ]
+    },
+    {
+      "n": 32,
+      "title": "查询 CS101 的统计",
+      "script": [
+        "SELECT * FROM CourseScoreStats WHERE course_id = 'CS101';"
+      ]
+    },
+    {
+      "n": 33,
+      "title": "查询计算机1班的成绩统计",
+      "script": [
+        "SELECT * FROM ClassCourseScoreStats WHERE class_name = '计算机1班';"
+      ]
+    },
+    {
+      "n": 34,
+      "title": "查询各班数据库原理的统计",
+      "script": [
+        "SELECT * FROM ClassCourseScoreStats WHERE course_name = '数据库原理';"
+      ]
+    }
+  ]
+}

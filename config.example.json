@@ -1,0 +1,15 @@
+{
+  "host": "",
+  "user": "",
+  "password": "",
+  "lab": "labs/opengauss-e5.json",
+  "shot_dir": "shots",
+  "speed": 1.5,
+  "window": {
+    "cols": 120,
+    "rows": 52,
+    "width": 1280,
+    "height": 980
+  },
+  "vars": {}
+}

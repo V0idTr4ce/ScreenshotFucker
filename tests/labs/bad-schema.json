@@ -1,0 +1,8 @@
+{
+  "schema_version": 99,
+  "name": "bad schema",
+  "vars": {},
+  "boxes": [
+    {"n": 1, "title": "a", "script": ["echo a"]}
+  ]
+}

@@ -1,0 +1,10 @@
+config.json
+__pycache__/
+*.py[cod]
+*.pyo
+.DS_Store
+Thumbs.db
+*.swp
+
+shots/**
+!shots/.gitkeep

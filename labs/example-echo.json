@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "name": "echo demo",
+  "description": "不连数据库。用来确认 SSH、粉红边界条和本机截图是否正常。",
+  "vars": {},
+  "settings": {
+    "window_cols": 120,
+    "window_rows": 40,
+    "window_width": 1100,
+    "window_height": 720,
+    "buffer_rows": 400,
+    "speed": 2,
+    "clear_between": true,
+    "capture_from_top": true
+  },
+  "session": {
+    "open": [],
+    "prepare_at": [],
+    "from": {
+      "connect_only_below": 1,
+      "replay_from": 1
+    }
+  },
+  "boxes": [
+    {
+      "n": 1,
+      "title": "主机信息",
+      "script": [
+        "hostname",
+        "whoami",
+        "date"
+      ]
+    },
+    {
+      "n": 2,
+      "title": "确认输出",
+      "script": [
+        "echo SFF_OK",
+        "uname -s"
+      ]
+    }
+  ]
+}

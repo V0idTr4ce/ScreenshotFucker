@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "name": "at vs from",
+  "description": "Box 1-2 write a flag file. Box 3 cats it. --at 3 should miss the file; --from 3 should see both markers.",
+  "vars": {},
+  "settings": {
+    "window_cols": 120,
+    "window_rows": 36,
+    "window_width": 1100,
+    "window_height": 700,
+    "buffer_rows": 400,
+    "speed": 2,
+    "clear_between": true
+  },
+  "session": {
+    "open": [],
+    "prepare_at": [],
+    "from": {
+      "connect_only_below": 1,
+      "replay_from": 1
+    }
+  },
+  "boxes": [
+    {
+      "n": 1,
+      "title": "write first marker",
+      "script": [
+        "rm -f /tmp/sff_atfrom.txt",
+        "echo BOX1_MARKER > /tmp/sff_atfrom.txt",
+        "echo wrote_box1"
+      ]
+    },
+    {
+      "n": 2,
+      "title": "append second marker",
+      "script": [
+        "echo BOX2_MARKER >> /tmp/sff_atfrom.txt",
+        "echo wrote_box2"
+      ]
+    },
+    {
+      "n": 3,
+      "title": "read markers",
+      "script": [
+        "echo BOX3_START",
+        "cat /tmp/sff_atfrom.txt || echo MISSING_FLAG_FILE",
+        "echo BOX3_END"
+      ]
+    }
+  ]
+}

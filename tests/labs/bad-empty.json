@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "name": "empty box",
+  "vars": {},
+  "boxes": [
+    {"n": 1, "title": "empty", "script": ["   ", ""]}
+  ]
+}
